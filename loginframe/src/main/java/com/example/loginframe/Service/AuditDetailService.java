@@ -25,7 +25,7 @@ public class AuditDetailService {
     private IsoStandardRepository isoStandardRepository;
 
     // ===================== CREATE =====================
-    public void saveAuditDetail(AuditDetailDTO dto) {
+    public AuditDetails saveAuditDetail(AuditDetailDTO dto) {
 
         AuditDetails audit = new AuditDetails();
 
@@ -36,19 +36,26 @@ public class AuditDetailService {
         audit.setScope(dto.getScope());
         audit.setNotes(dto.getNotes());
 
-        // ✅ keep status consistent
-        // If DTO is null/blank, default to "Pending"
+        // ✅ IMPORTANT: keep status consistent in DB (lowercase)
+        // If DTO is null/blank, default to "pending"
         String status = (dto.getStatus() == null || dto.getStatus().trim().isEmpty())
-                ? "Pending"
-                : dto.getStatus().trim();
+                ? "pending"
+                : dto.getStatus().trim().toLowerCase();
         audit.setStatus(status);
 
         audit.setAssignedAuditor(dto.getAssignedAuditor());
         audit.setAdminComment(dto.getAdminComment());
 
-        ProfileEntity profile = profileRepository.findByLoginEmail(dto.getLoginEmail())
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+        // ✅ attach profile using loginEmail
+        String email = (dto.getLoginEmail() == null) ? "" : dto.getLoginEmail().trim();
+        if (email.isEmpty()) {
+            throw new RuntimeException("loginEmail is required");
+        }
 
+        ProfileEntity profile = profileRepository.findByLoginEmail(email)
+                .orElseThrow(() -> new RuntimeException("Profile not found for: " + email));
+
+        // ✅ attach ISO standards
         Set<IsoStandard> isoSet = new HashSet<>();
         if (dto.getIsoStandards() != null) {
             for (String isoCode : dto.getIsoStandards()) {
@@ -56,9 +63,8 @@ public class AuditDetailService {
                 String code = isoCode.trim();
                 if (code.isEmpty()) continue;
 
-                // ✅ no casting needed
-                IsoStandard iso = isoStandardRepository.findByIsoCode(isoCode)
-                        .orElseThrow(() -> new RuntimeException("ISO not found"));
+                IsoStandard iso = isoStandardRepository.findByIsoCode(code)
+                        .orElseThrow(() -> new RuntimeException("ISO not found: " + code));
 
                 isoSet.add(iso);
             }
@@ -67,11 +73,12 @@ public class AuditDetailService {
         audit.setIsoStandards(isoSet);
         audit.setProfile(profile);
 
-        auditDetailsRepository.save(audit);
+        // ✅ MUST RETURN (this fixes your error + gives auditId back)
+        return auditDetailsRepository.save(audit);
     }
 
     // ===================== UPDATE =====================
-    public void updateAuditDetail(long id, AuditDetailDTO dto) {
+    public AuditDetails updateAuditDetail(long id, AuditDetailDTO dto) {
 
         AuditDetails audit = auditDetailsRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Audit not found"));
@@ -84,16 +91,20 @@ public class AuditDetailService {
         audit.setNotes(dto.getNotes());
 
         if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-            audit.setStatus(dto.getStatus().trim());
+            audit.setStatus(dto.getStatus().trim().toLowerCase());
         }
 
         audit.setAssignedAuditor(dto.getAssignedAuditor());
         audit.setAdminComment(dto.getAdminComment());
 
-        ProfileEntity profile = profileRepository
-                .findByLoginEmail(dto.getLoginEmail())
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
-        audit.setProfile(profile);
+        // ✅ profile update by loginEmail
+        String email = (dto.getLoginEmail() == null) ? "" : dto.getLoginEmail().trim();
+        if (!email.isEmpty()) {
+            ProfileEntity profile = profileRepository
+                    .findByLoginEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Profile not found for: " + email));
+            audit.setProfile(profile);
+        }
 
         // ✅ also update ISO list when updating
         if (dto.getIsoStandards() != null) {
@@ -103,14 +114,14 @@ public class AuditDetailService {
                 String code = isoCode.trim();
                 if (code.isEmpty()) continue;
 
-                IsoStandard iso = isoStandardRepository.findByIsoCode(isoCode)
-                        .orElseThrow(() -> new RuntimeException("ISO not found: " + isoCode));
+                IsoStandard iso = isoStandardRepository.findByIsoCode(code)
+                        .orElseThrow(() -> new RuntimeException("ISO not found: " + code));
                 isoSet.add(iso);
             }
             audit.setIsoStandards(isoSet);
         }
 
-        auditDetailsRepository.save(audit);
+        return auditDetailsRepository.save(audit);
     }
 
     // ===================== DELETE =====================
@@ -124,21 +135,17 @@ public class AuditDetailService {
     // ===================== ADMIN: PENDING AUDITS =====================
     public List<AuditDetailDTO> getPendingAuditsForAdmin() {
 
-        List<AuditDetails> audits = new ArrayList<>();
+        List<AuditDetails> audits;
+
         try {
             audits = auditDetailsRepository.findByStatus("pending");
-        } catch (Exception ignored) {}
-
-        if (audits == null || audits.isEmpty()) {
-            try {
-                audits = auditDetailsRepository.findByStatus("pending");
-            } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            audits = List.of();
         }
 
         if (audits == null) audits = List.of();
 
         List<AuditDetailDTO> dtoList = new ArrayList<>();
-
         for (AuditDetails audit : audits) {
             dtoList.add(toDto(audit, true));
         }
@@ -147,7 +154,6 @@ public class AuditDetailService {
     }
 
     // ===================== USER: NOTIFICATIONS =====================
-
     public List<AuditDetailDTO> getUserNotifications(String loginEmail) {
 
         if (loginEmail == null || loginEmail.trim().isEmpty()) return List.of();
@@ -159,7 +165,6 @@ public class AuditDetailService {
 
         List<AuditDetailDTO> dtoList = new ArrayList<>();
         for (AuditDetails audit : audits) {
-            // include loginEmail in response
             dtoList.add(toDto(audit, true));
         }
         return dtoList;
@@ -185,10 +190,14 @@ public class AuditDetailService {
             dto.setLoginEmail(audit.getProfile().getLoginEmail());
         }
 
+        // ✅ IMPORTANT:
+        // your frontend expects isoStandards like ["ISO9001","ISO27001"]
+        // but you were returning "ISO9001  ISO Name"
+        // returning only isoCode is better for consistency
         List<String> isoCodes = (audit.getIsoStandards() == null)
                 ? List.of()
                 : audit.getIsoStandards().stream()
-                .map(iso -> iso.getIsoCode() + "  " + iso.getIsoName())
+                .map(IsoStandard::getIsoCode)
                 .toList();
 
         dto.setIsoStandards(isoCodes);

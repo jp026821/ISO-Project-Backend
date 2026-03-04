@@ -1,5 +1,6 @@
 package com.example.loginframe.Controller;
 
+import com.example.loginframe.Entity.AuditDetails;
 import com.example.loginframe.Entity.Documents;
 import com.example.loginframe.Entity.ProfileEntity;
 import com.example.loginframe.Entity.ProfileOrganizationRequest;
@@ -7,61 +8,43 @@ import com.example.loginframe.Service.*;
 import com.example.loginframe.dto.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
+import org.springframework.http.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api")
 public class AuthanticationController {
 
-    @Autowired
-    private ProfileService profileService;
-
-    @Autowired
-    private SignupService signupService;
-
-    @Autowired
-    private LoginService loginService;
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private EmployeSignupService employeSignupService;
-
-    @Autowired
-    private IsoStandardService isoStandardService;
-
-    @Autowired
-    private AuditDetailService auditDetailService;
-
-    @Autowired
-    private AssiginAuditor assiginAuditor;
-
-    @Autowired
-    private DocumentService documentService;
+    @Autowired private ProfileService profileService;
+    @Autowired private SignupService signupService;
+    @Autowired private LoginService loginService;
+    @Autowired private UserService userService;
+    @Autowired private EmployeSignupService employeSignupService;
+    @Autowired private IsoStandardService isoStandardService;
+    @Autowired private AuditDetailService auditDetailService;
+    @Autowired private AssiginAuditor assiginAuditor;
+    @Autowired private DocumentService documentService;
 
     /* ================= LOGIN ================= */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody LoginRequest request,
-            HttpSession session
-    ) {
-        LoginResponse response = loginService.login(request, session);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request, HttpSession session) {
+        return ResponseEntity.ok(loginService.login(request, session));
     }
 
     /* ================= LOGOUT ================= */
     @PostMapping("/logout")
-    public String logout(HttpSession session) {
+    public ResponseEntity<String> logout(HttpSession session) {
         session.invalidate();
-        return "Logged out";
+        return ResponseEntity.ok("Logged out");
     }
 
     /* ================= SIGNUP ================= */
@@ -71,21 +54,17 @@ public class AuthanticationController {
         return ResponseEntity.status(HttpStatus.CREATED).body("Signup successful");
     }
 
-    /* ================= PROFILE: CREATE OR UPDATE ================= */
+    /* ================= PROFILE ================= */
     @Transactional
     @PostMapping("/profile")
-    public ResponseEntity<String> saveOrUpdateProfile(
-            @RequestBody ProfileOrganizationRequest porequest
-    ) {
+    public ResponseEntity<String> saveOrUpdateProfile(@RequestBody ProfileOrganizationRequest porequest) {
         try {
-            String msg = profileService.saveOrUpdateProfile(porequest);
-            return ResponseEntity.ok(msg);
+            return ResponseEntity.ok(profileService.saveOrUpdateProfile(porequest));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    /* ================= PROFILE: GET BY LOGIN EMAIL ================= */
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(@RequestParam String loginEmail) {
         try {
@@ -103,12 +82,8 @@ public class AuthanticationController {
     }
 
     @PutMapping("/users/{id}")
-    public ResponseEntity<AdminUserResponse> updateUser(
-            @PathVariable int id,
-            @RequestBody UpdateUserRequest req
-    ) {
-        AdminUserResponse updated = userService.updateUser(id, req);
-        return ResponseEntity.ok(updated);
+    public ResponseEntity<AdminUserResponse> updateUser(@PathVariable int id, @RequestBody UpdateUserRequest req) {
+        return ResponseEntity.ok(userService.updateUser(id, req));
     }
 
     @DeleteMapping("/users/{id}")
@@ -121,8 +96,7 @@ public class AuthanticationController {
     @PostMapping("/admin/add-employee")
     public ResponseEntity<String> signupEmployeeOnly(@RequestBody SignupRequest request) {
         try {
-            String msg = employeSignupService.addEmployee(request);
-            return ResponseEntity.ok(msg);
+            return ResponseEntity.ok(employeSignupService.addEmployee(request));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
@@ -134,8 +108,7 @@ public class AuthanticationController {
     /* ================= ISO STANDARDS ================= */
     @GetMapping("/iso-standards")
     public ResponseEntity<List<IsoStandardDTO>> getAllIsoStandard() {
-        List<IsoStandardDTO> isoList = isoStandardService.getAllIsoStandared();
-        return ResponseEntity.ok(isoList);
+        return ResponseEntity.ok(isoStandardService.getAllIsoStandared());
     }
 
     @PostMapping("/iso-standards/create")
@@ -158,21 +131,12 @@ public class AuthanticationController {
 
     /* ================= AUDIT DETAILS ================= */
     @PostMapping("/audit-details")
-    public ResponseEntity<String> createAudit(@RequestBody AuditDetailDTO dto) {
-        auditDetailService.saveAuditDetail(dto);
-        return ResponseEntity.ok("Audit created successfully");
-    }
-
-    @PutMapping("/audit-details/update/{id}")
-    public ResponseEntity<String> updateAudit(@PathVariable Long id, @RequestBody AuditDetailDTO dto) {
-        auditDetailService.updateAuditDetail(id, dto);
-        return ResponseEntity.ok("Audit Updated Successfully");
-    }
-
-    @DeleteMapping("/audit-details/delete/{id}")
-    public ResponseEntity<String> deleteAudit(@PathVariable long id) {
-        auditDetailService.deleteAudit(id);
-        return ResponseEntity.ok("Audit Deleted Successfully");
+    public ResponseEntity<?> createAudit(@RequestBody AuditDetailDTO dto) {
+        AuditDetails saved = auditDetailService.saveAuditDetail(dto);
+        return ResponseEntity.ok(Map.of(
+                "auditId", saved.getAuditId(),
+                "message", "Audit created successfully"
+        ));
     }
 
     /* ================= ADMIN: PENDING AUDITS ================= */
@@ -193,22 +157,52 @@ public class AuthanticationController {
         return ResponseEntity.ok(auditDetailService.getUserNotifications(loginEmail));
     }
 
-    @PostMapping("/{auditId}/upload")
-    public ResponseEntity<?> uploadeDocuments(@PathVariable Long auditId,@RequestParam("file") MultipartFile file)
-    {
+    /* ================= DOCUMENT UPLOAD (MULTI) ================= */
+    // React calls: POST /api/audit-documents/upload-multi
+    @PostMapping(value = "/audit-documents/upload-multi", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadMultipleDocuments(
+            @RequestParam("auditId") Long auditId,
+            @RequestParam(value = "docTypes", required = false) List<String> docTypes,
+            @RequestParam("files") List<MultipartFile> files
+    ) {
         try {
-            Documents savedDocument =
-                    documentService.uploadFile(file, auditId);
-
-            return ResponseEntity.ok(savedDocument);
-
+            List<Documents> saved = documentService.uploadMultiple(auditId, docTypes, files);
+            return ResponseEntity.ok(saved);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError()
-                    .body("File upload failed: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /* ================= ADMIN: LIST ALL DOCUMENTS ================= */
+    // Admin calls: GET /api/admin/documents
+    @GetMapping("/admin/documents")
+    public ResponseEntity<?> adminListAllDocuments() {
+        return ResponseEntity.ok(documentService.listAllDocuments());
+    }
+
+    /* ================= ADMIN: DOWNLOAD DOCUMENT ================= */
+    // Admin calls: GET /api/admin/documents/download/{docId}
+    @GetMapping("/admin/documents/download/{docId}")
+    public ResponseEntity<?> downloadDocument(@PathVariable Long docId) {
+        try {
+            Resource resource = documentService.downloadResource(docId);
+            String originalName = documentService.getOriginalName(docId);
+
+            String contentType = "application/octet-stream";
+            try {
+                String probed = Files.probeContentType(resource.getFile().toPath());
+                if (probed != null) contentType = probed;
+            } catch (Exception ignored) {}
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + originalName + "\"")
+                    .body(resource);
 
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
 }
