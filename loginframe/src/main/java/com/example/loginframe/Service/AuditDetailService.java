@@ -37,11 +37,7 @@ public class AuditDetailService {
         audit.setScope(dto.getScope());
         audit.setNotes(dto.getNotes());
 
-<<<<<<< HEAD
-=======
-        // ✅ IMPORTANT: keep status consistent in DB (lowercase)
-        // If DTO is null/blank, default to "pending"
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
+
         String status = (dto.getStatus() == null || dto.getStatus().trim().isEmpty())
                 ? "pending"
                 : dto.getStatus().trim().toLowerCase();
@@ -67,14 +63,10 @@ public class AuditDetailService {
                 String code = isoCode.trim();
                 if (code.isEmpty()) continue;
 
-<<<<<<< HEAD
+
                 IsoStandard iso = isoStandardRepository.findByIsoCode(isoCode)
                         .orElseThrow(() -> new RuntimeException("ISO not found"));
-=======
-                IsoStandard iso = isoStandardRepository.findByIsoCode(code)
-                        .orElseThrow(() -> new RuntimeException("ISO not found: " + code));
 
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
                 isoSet.add(iso);
             }
         }
@@ -82,12 +74,9 @@ public class AuditDetailService {
         audit.setIsoStandards(isoSet);
         audit.setProfile(profile);
 
-<<<<<<< HEAD
+
         return auditDetailsRepository.save(audit); // ✅ return saved entity
-=======
-        // ✅ MUST RETURN (this fixes your error + gives auditId back)
-        return auditDetailsRepository.save(audit);
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
+
     }
 
     // ===================== UPDATE =====================

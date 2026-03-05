@@ -8,29 +8,18 @@ import com.example.loginframe.Service.*;
 import com.example.loginframe.dto.*;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< HEAD
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-=======
-import org.springframework.core.io.Resource;
-import org.springframework.http.*;
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
-<<<<<<< HEAD
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-=======
-import java.nio.file.Files;
-import java.util.List;
-import java.util.Map;
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
+
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -144,7 +133,7 @@ public class AuthanticationController {
 
     /* ================= AUDIT DETAILS ================= */
     @PostMapping("/audit-details")
-<<<<<<< HEAD
+
     public ResponseEntity<Map<String, Object>> createAudit(@RequestBody AuditDetailDTO dto) {
         AuditDetails saved = auditDetailService.saveAuditDetail(dto);
 
@@ -165,14 +154,7 @@ public class AuthanticationController {
     public ResponseEntity<String> deleteAudit(@PathVariable long id) {
         auditDetailService.deleteAudit(id);
         return ResponseEntity.ok("Audit Deleted Successfully");
-=======
-    public ResponseEntity<?> createAudit(@RequestBody AuditDetailDTO dto) {
-        AuditDetails saved = auditDetailService.saveAuditDetail(dto);
-        return ResponseEntity.ok(Map.of(
-                "auditId", saved.getAuditId(),
-                "message", "Audit created successfully"
-        ));
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
+
     }
 
     /* ================= ADMIN: PENDING AUDITS ================= */
@@ -193,7 +175,6 @@ public class AuthanticationController {
         return ResponseEntity.ok(auditDetailService.getUserNotifications(loginEmail));
     }
 
-<<<<<<< HEAD
     /*===================== USER: UPLOAD DOCUMENTS =================== */
     @PostMapping("/{auditId}/documents/upload")
     public ResponseEntity<String> uploadDocument(@PathVariable Long auditId,@RequestParam("file") MultipartFile file)
@@ -203,54 +184,7 @@ public class AuthanticationController {
             return ResponseEntity.ok("Document saved with ID: " + saved.getId());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Upload failed: " + e.getMessage());
-=======
-    /* ================= DOCUMENT UPLOAD (MULTI) ================= */
-    // React calls: POST /api/audit-documents/upload-multi
-    @PostMapping(value = "/audit-documents/upload-multi", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadMultipleDocuments(
-            @RequestParam("auditId") Long auditId,
-            @RequestParam(value = "docTypes", required = false) List<String> docTypes,
-            @RequestParam("files") List<MultipartFile> files
-    ) {
-        try {
-            List<Documents> saved = documentService.uploadMultiple(auditId, docTypes, files);
-            return ResponseEntity.ok(saved);
-        } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
 
-    /* ================= ADMIN: LIST ALL DOCUMENTS ================= */
-    // Admin calls: GET /api/admin/documents
-    @GetMapping("/admin/documents")
-    public ResponseEntity<?> adminListAllDocuments() {
-        return ResponseEntity.ok(documentService.listAllDocuments());
-    }
-
-    /* ================= ADMIN: DOWNLOAD DOCUMENT ================= */
-    // Admin calls: GET /api/admin/documents/download/{docId}
-    @GetMapping("/admin/documents/download/{docId}")
-    public ResponseEntity<?> downloadDocument(@PathVariable Long docId) {
-        try {
-            Resource resource = documentService.downloadResource(docId);
-            String originalName = documentService.getOriginalName(docId);
-
-            String contentType = "application/octet-stream";
-            try {
-                String probed = Files.probeContentType(resource.getFile().toPath());
-                if (probed != null) contentType = probed;
-            } catch (Exception ignored) {}
-
-            return ResponseEntity.ok()
-                    .contentType(MediaType.parseMediaType(contentType))
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + originalName + "\"")
-                    .body(resource);
-
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
->>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
         }
     }
 
