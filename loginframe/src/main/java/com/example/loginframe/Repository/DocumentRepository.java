@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+<<<<<<< HEAD
 
 public interface DocumentRepository extends JpaRepository<Documents,Long> {
 
@@ -16,3 +17,8 @@ public interface DocumentRepository extends JpaRepository<Documents,Long> {
 
     List<Documents> findByAuditDetails_AuditIdAndStatus(Long auditId, String rejected);
 }
+=======
+public interface DocumentRepository extends JpaRepository<Documents, Long> {
+    List<Documents> findByAuditDetails_AuditId(Long auditId); // ✅ used by listByAuditId if needed
+}
+>>>>>>> 7fde279917cb1acbaa237809eadcf86af259ac76
