@@ -12,4 +12,6 @@ public interface IsoStandardRepository extends JpaRepository<IsoStandard, Long> 
 
     // ✅ NEW: fetch multiple iso standards
     List<IsoStandard> findByIsoCodeIn(List<String> isoCodes);
+
+
 }

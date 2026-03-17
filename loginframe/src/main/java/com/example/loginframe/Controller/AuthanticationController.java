@@ -7,6 +7,7 @@ import com.example.loginframe.Entity.ProfileOrganizationRequest;
 import com.example.loginframe.Service.*;
 import com.example.loginframe.dto.*;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,6 +44,9 @@ public class AuthanticationController {
     private AssiginAuditor assiginAuditor;
     @Autowired
     private DocumentService documentService;
+
+    @Autowired
+    private ContactService contactService;
 
     /* ================= LOGIN ================= */
     @PostMapping("/login")
@@ -255,7 +259,18 @@ public class AuthanticationController {
     }
 
 
-
+    @PostMapping("/contact/save")
+    public ResponseEntity<?> saveContact(@Valid @RequestBody ContactDto contactDto) {
+        try {
+            ContactDto savedContact = contactService.saveContact(contactDto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedContact);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to save contact details");
+        }
+    }
 
 
 }
