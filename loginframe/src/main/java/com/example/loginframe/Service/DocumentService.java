@@ -28,21 +28,26 @@ public class DocumentService {
         // Rolls back everything if anything fails
         @Transactional
         public Documents saveDocument(Long auditId, MultipartFile file) throws IOException {
-            // Step 1: Find audit - if not found, throws exception → rollback
             AuditDetails audit = auditRepository.findById(auditId)
                     .orElseThrow(() -> new RuntimeException("Audit not found with ID: " + auditId));
 
-            // Step 2: Build document
+            if (file == null || file.isEmpty()) {
+                throw new RuntimeException("File is empty");
+            }
+
+            if (file.getSize() > 5 * 1024 * 1024) {
+                throw new RuntimeException("File size exceeds 5 MB limit");
+            }
+
             Documents doc = new Documents();
             doc.setFileName(file.getOriginalFilename());
             doc.setDocType(file.getContentType());
             doc.setData(file.getBytes());
+            doc.setStatus("Pending");
             doc.setAuditDetails(audit);
 
-            // Step 3: Save - if this fails, Step 1 also rolls back
             return documentRepository.save(doc);
         }
-
         // Read-only transaction (better performance for fetch queries)
         @Transactional(readOnly = true)
         public List<Documents> getDocumentsByAuditId(Long auditId) {

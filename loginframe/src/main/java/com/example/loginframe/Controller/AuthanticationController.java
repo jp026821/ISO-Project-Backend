@@ -182,14 +182,16 @@ public class AuthanticationController {
 
     /*===================== USER: UPLOAD DOCUMENTS =================== */
     @PostMapping("/{auditId}/documents/upload")
-    public ResponseEntity<String> uploadDocument(@PathVariable Long auditId,@RequestParam("file") MultipartFile file)
-    {
+    public ResponseEntity<String> uploadDocument(
+            @PathVariable Long auditId,
+            @RequestParam("file") MultipartFile file) {
         try {
             Documents saved = documentService.saveDocument(auditId, file);
             return ResponseEntity.ok("Document saved with ID: " + saved.getId());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Upload failed: " + e.getMessage());
-
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Upload failed: " + e.getClass().getSimpleName() + " - " + e.getMessage());
         }
     }
 
