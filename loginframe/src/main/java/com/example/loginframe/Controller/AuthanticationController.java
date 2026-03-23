@@ -15,11 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.example.loginframe.Entity.AuditUpdate;
 
 @CrossOrigin(origins = "http://localhost:3000")
 @RestController
@@ -28,25 +30,39 @@ public class AuthanticationController {
 
     @Autowired
     private ProfileService profileService;
+
     @Autowired
     private SignupService signupService;
+
     @Autowired
     private LoginService loginService;
+
     @Autowired
     private UserService userService;
+
     @Autowired
     private EmployeSignupService employeSignupService;
+
     @Autowired
     private IsoStandardService isoStandardService;
+
     @Autowired
     private AuditDetailService auditDetailService;
+
     @Autowired
     private AssiginAuditor assiginAuditor;
+
     @Autowired
     private DocumentService documentService;
 
     @Autowired
     private ContactService contactService;
+
+    @Autowired
+    private AuditorService auditorService;
+
+    @Autowired
+    private FeedbackService feedbackService;
 
     /* ================= LOGIN ================= */
     @PostMapping("/login")
@@ -71,7 +87,6 @@ public class AuthanticationController {
         } else {
             return ResponseEntity.badRequest().body(result);
         }
-
     }
 
     /* ================= PROFILE ================= */
@@ -100,8 +115,6 @@ public class AuthanticationController {
     public ResponseEntity<?> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
-
-
 
     @DeleteMapping("/users/{id}")
     public ResponseEntity<String> delete(@PathVariable Long id) {
@@ -148,7 +161,6 @@ public class AuthanticationController {
 
     /* ================= AUDIT DETAILS ================= */
     @PostMapping("/audit-details")
-
     public ResponseEntity<Map<String, Object>> createAudit(@RequestBody AuditDetailDTO dto) {
         AuditDetails saved = auditDetailService.saveAuditDetail(dto);
 
@@ -164,7 +176,6 @@ public class AuthanticationController {
         auditDetailService.updateAuditDetail(id, dto);
         return ResponseEntity.ok("Audit Updated Successfully");
     }
-
 
     /* ================= ADMIN: PENDING AUDITS ================= */
     @GetMapping("/pending")
@@ -184,7 +195,7 @@ public class AuthanticationController {
         return ResponseEntity.ok(auditDetailService.getUserNotifications(loginEmail));
     }
 
-    /*===================== USER: UPLOAD DOCUMENTS =================== */
+    /* ================= USER: UPLOAD DOCUMENTS ================= */
     @PostMapping("/{auditId}/documents/upload")
     public ResponseEntity<String> uploadDocument(
             @PathVariable Long auditId,
@@ -199,45 +210,39 @@ public class AuthanticationController {
         }
     }
 
-    // Get all documents for a specific audit
     @GetMapping("/{auditId}/documents")
     public ResponseEntity<List<Map<String, Object>>> getDocuments(@PathVariable Long auditId) {
         List<Documents> docs = documentService.getDocumentsByAuditId(auditId);
 
-        // Return metadata only (not binary data in list)
         List<Map<String, Object>> response = docs.stream().map(doc -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", doc.getId());
             map.put("fileName", doc.getFileName());
             map.put("fileType", doc.getDocType());
-            map.put("downloadUrl", "/api/audit/" + auditId + "/documents/" + doc.getId());
+            map.put("downloadUrl", "/api/" + auditId + "/documents/" + doc.getId());
             return map;
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
 
-    // Download/view a specific document
     @GetMapping("/{auditId}/documents/{docId}")
-    public ResponseEntity<byte[]> getDocument(@PathVariable Long auditId,@PathVariable Long docId)
-    {
+    public ResponseEntity<byte[]> getDocument(@PathVariable Long auditId, @PathVariable Long docId) {
         Documents doc = documentService.getDocumentById(docId);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(doc.getDocType()))
                 .body(doc.getData());
     }
 
-    // Show User All Rejected Documents
     @GetMapping("/{auditId}/documents/rejected")
     public ResponseEntity<List<DocumentDTO>> getRejectedDocuments(@PathVariable Long auditId) {
         return ResponseEntity.ok(documentService.getRejectedDocumentsByAuditId(auditId));
     }
 
-
-    // Admin rejects a document with comment
     @PutMapping("/{auditId}/documents/{docId}/reject")
-    public ResponseEntity<String> rejectDocument(@PathVariable Long auditId, @PathVariable Long docId,
-            @RequestBody Map<String, String> body) {
+    public ResponseEntity<String> rejectDocument(@PathVariable Long auditId,
+                                                 @PathVariable Long docId,
+                                                 @RequestBody Map<String, String> body) {
         try {
             String comment = body.get("adminComment");
             documentService.rejectDocument(docId, comment);
@@ -247,7 +252,6 @@ public class AuthanticationController {
         }
     }
 
-    // Admin approves a document
     @PutMapping("/{auditId}/documents/{docId}/approve")
     public ResponseEntity<String> approveDocument(@PathVariable Long auditId, @PathVariable Long docId) {
         try {
@@ -258,7 +262,7 @@ public class AuthanticationController {
         }
     }
 
-
+    /* ================= CONTACT ================= */
     @PostMapping("/contact")
     public ResponseEntity<?> saveContact(@Valid @RequestBody ContactDto contactDto) {
         try {
@@ -271,10 +275,8 @@ public class AuthanticationController {
                     .body("Failed to save contact details");
         }
     }
-    // Feedback
-    @Autowired
-    private FeedbackService feedbackService;
 
+    /* ================= FEEDBACK ================= */
     @PostMapping("/feedback")
     public ResponseEntity<?> saveFeedback(@Valid @RequestBody FeedbackDto feedbackDto) {
         try {
@@ -292,5 +294,51 @@ public class AuthanticationController {
         return ResponseEntity.ok(feedbackService.getAllFeedback());
     }
 
+    /* ================= AUDITOR ================= */
+    @GetMapping("/my-audits")
+    public List<AuditorAuditDTO> getAssignedAudits(@RequestParam String auditorEmail) {
+        return auditorService.getAssignedAudits(auditorEmail);
+    }
 
+    @GetMapping("/audit/{auditId}")
+    public AuditorAuditDTO getAuditDetails(
+            @PathVariable Long auditId,
+            @RequestParam String auditorEmail
+    ) {
+        return auditorService.getAuditDetails(auditId, auditorEmail);
+    }
+
+    @GetMapping("/audit/{auditId}/updates")
+    public List<AuditUpdate> getAuditUpdates(
+            @PathVariable Long auditId,
+            @RequestParam String auditorEmail
+    ) {
+        return auditorService.getAuditUpdates(auditId, auditorEmail);
+    }
+
+    @PostMapping("/audit/{auditId}/remark")
+    public String addRemark(
+            @PathVariable Long auditId,
+            @RequestBody AuditRemarkRequest request
+    ) {
+        return auditorService.addRemark(auditId, request);
+    }
+
+    @PutMapping("/audit/{auditId}/status")
+    public String updateStatus(
+            @PathVariable Long auditId,
+            @RequestBody AuditStatusUpdateRequest request
+    ) {
+        return auditorService.updateAuditStatus(auditId, request);
+    }
+
+    /* ================= USER PRODUCTS ================= */
+    @GetMapping("/user/products")
+    public ResponseEntity<List<String>> getProducts() {
+        return ResponseEntity.ok(List.of(
+                "ISO Certification",
+                "Internal Audit",
+                "External Audit"
+        ));
+    }
 }

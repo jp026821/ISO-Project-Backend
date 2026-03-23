@@ -20,4 +20,6 @@ public interface AuditDetailsRepository extends JpaRepository<AuditDetails, Long
             "AND (EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status = 'Pending') " +
             "OR NOT EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status != 'Approved'))")
     List<AuditDetails> findAuditsWithPendingDocuments();
+    List<AuditDetails> findByAssignedAuditor(String assignedAuditor);
+    List<AuditDetails> findByAssignedAuditorOrderByAuditIdDesc(String assignedAuditor);
 }

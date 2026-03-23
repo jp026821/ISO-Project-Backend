@@ -10,15 +10,15 @@ import org.springframework.stereotype.Service;
 public class AssiginAuditor {
 
     @Autowired
-    public AuditDetailsRepository auditDetailsRepository;
+    private AuditDetailsRepository auditDetailsRepository;
 
     public void assignAuditor(Long auditId, AuditDetailDTO dto) {
 
         AuditDetails audit = auditDetailsRepository.findById(auditId)
                 .orElseThrow(() -> new RuntimeException("Audit not found"));
 
-        audit.setAssignedAuditor(dto.getAssignedAuditor());
-        audit.setStatus("Approved");
+        audit.setAssignedAuditor(dto.getAssignedAuditor());   // save auditor email
+        audit.setStatus("Assigned");                          // important fix
         audit.setAdminComment(dto.getAdminComment());
 
         auditDetailsRepository.save(audit);

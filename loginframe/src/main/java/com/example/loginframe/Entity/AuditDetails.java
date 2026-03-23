@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,8 +24,11 @@ public class AuditDetails {
     private Long auditId;
 
     private String auditType;
+
     private LocalDate preferredDate;
+
     private String duration;
+
     private String auditLocation;
 
     @Column(length = 2000)
@@ -34,14 +38,18 @@ public class AuditDetails {
     private String notes;
 
     private String status = "pending";
+
     private String assignedAuditor;
+
     private String adminComment;
 
+    private String auditorComment;
+
+    private String loginEmail;
 
     @ManyToOne
     @JoinColumn(name = "profile_id")
     private ProfileEntity profile;
-
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -53,5 +61,4 @@ public class AuditDetails {
 
     @OneToMany(mappedBy = "auditDetails", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Documents> documents = new ArrayList<>();
-
 }
