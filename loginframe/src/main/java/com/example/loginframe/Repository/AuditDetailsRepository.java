@@ -1,6 +1,8 @@
 package com.example.loginframe.Repository;
 
 import com.example.loginframe.Entity.AuditDetails;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -17,9 +19,9 @@ public interface AuditDetailsRepository extends JpaRepository<AuditDetails, Long
 
     @Query("SELECT DISTINCT a FROM AuditDetails a " +
             "WHERE a.status = 'Pending' " +
-            "AND (EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status = 'Pending') " +
-            "OR NOT EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status != 'Approved'))")
-    List<AuditDetails> findAuditsWithPendingDocuments();
-    List<AuditDetails> findByAssignedAuditor(String assignedAuditor);
+            "AND (EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status IN ('Pending', 'Resubmitted')) " +
+            "OR NOT EXISTS (SELECT d FROM Documents d WHERE d.auditDetails = a AND d.status NOT IN ('Approved'))) ")
+    Page<AuditDetails> findAuditsWithPendingDocuments(Pageable pageable);
+
     List<AuditDetails> findByAssignedAuditorOrderByAuditIdDesc(String assignedAuditor);
 }

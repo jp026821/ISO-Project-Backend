@@ -9,6 +9,8 @@ import com.example.loginframe.dto.*;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -179,8 +182,12 @@ public class AuthanticationController {
 
     /* ================= ADMIN: PENDING AUDITS ================= */
     @GetMapping("/pending")
-    public ResponseEntity<List<AuditDetailDTO>> getpendingaudit() {
-        return ResponseEntity.ok(auditDetailService.getPendingAuditsForAdmin());
+    public ResponseEntity<Page<AuditDetailDTO>> getPendingAudits(Pageable pageable) {
+
+        Page<AuditDetailDTO> audits =
+                auditDetailService.getPendingAuditsAndAssigneAuditdsForAdmin(pageable);
+
+        return ResponseEntity.ok(audits);   // ✅ HTTP 200
     }
 
     @PutMapping("/pending/Assigned/{id}")
@@ -220,6 +227,7 @@ public class AuthanticationController {
             map.put("fileName", doc.getFileName());
             map.put("fileType", doc.getDocType());
             map.put("downloadUrl", "/api/" + auditId + "/documents/" + doc.getId());
+            map.put("status", doc.getStatus());
             return map;
         }).collect(Collectors.toList());
 
@@ -251,6 +259,18 @@ public class AuthanticationController {
             return ResponseEntity.status(500).body(e.getMessage());
         }
     }
+
+    @PutMapping("/audit/documents/{docId}/reupload")
+    public ResponseEntity<Documents> reUploadDocument(
+            @PathVariable Long docId,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+
+        Documents updatedDoc = documentService.reUploadDocument(docId, file);
+        return ResponseEntity.ok(updatedDoc);
+    }
+
+
 
     @PutMapping("/{auditId}/documents/{docId}/approve")
     public ResponseEntity<String> approveDocument(@PathVariable Long auditId, @PathVariable Long docId) {

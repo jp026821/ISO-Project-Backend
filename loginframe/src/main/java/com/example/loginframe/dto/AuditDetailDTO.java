@@ -28,5 +28,5 @@ public class AuditDetailDTO {
 
     private List<String> isoStandards;
 
-    private List<DocumentDTO> documents = new ArrayList<>();
+
 }

@@ -9,6 +9,8 @@ import com.example.loginframe.Repository.ProfileRepository;
 import com.example.loginframe.dto.AuditDetailDTO;
 import com.example.loginframe.dto.DocumentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -140,11 +142,11 @@ public class AuditDetailService {
     }
 
     // ===================== ADMIN =====================
-    public List<AuditDetailDTO> getPendingAuditsForAdmin() {
-        return auditDetailsRepository.findAuditsWithPendingDocuments()
-                .stream()
-                .map(audit -> toDto(audit, true))
-                .toList();
+    public Page<AuditDetailDTO> getPendingAuditsAndAssigneAuditdsForAdmin(Pageable pageable) {
+
+        return auditDetailsRepository
+                .findAuditsWithPendingDocuments(pageable)
+                .map(audit -> toDto(audit, true));   // ✅ clean mapping
     }
 
     // ===================== USER =====================
@@ -206,7 +208,7 @@ public class AuditDetailService {
                 ))
                 .toList();
 
-        dto.setDocuments(docList);
+
 
         return dto;
     }
