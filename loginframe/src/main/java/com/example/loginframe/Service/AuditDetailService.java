@@ -6,6 +6,7 @@ import com.example.loginframe.Entity.ProfileEntity;
 import com.example.loginframe.Repository.AuditDetailsRepository;
 import com.example.loginframe.Repository.IsoStandardRepository;
 import com.example.loginframe.Repository.ProfileRepository;
+import com.example.loginframe.dto.AuditCountDTO;
 import com.example.loginframe.dto.AuditDetailDTO;
 import com.example.loginframe.dto.DocumentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,6 +167,30 @@ public class AuditDetailService {
         }
 
         return dtoList;
+    }
+
+    public AuditCountDTO getAuditCounts() {
+
+        long assigned = auditDetailsRepository.countByStatus("Assigned");
+        long inProgress = auditDetailsRepository.countByStatus("In Progress");
+        long completed = auditDetailsRepository.countByStatus("Completed");
+
+        return new AuditCountDTO(assigned, inProgress, completed);
+    }
+
+    public List<AuditDetailDTO> getAudits(String status) {
+
+        List<AuditDetails> audits;
+
+        if (status != null && !status.isEmpty()) {
+            audits = auditDetailsRepository.findByStatus(status);
+        } else {
+            audits = auditDetailsRepository.findAll();
+        }
+
+        return audits.stream()
+                .map(audit -> toDto(audit, true)) // ✅ FIXED
+                .toList();
     }
 
     // ===================== DTO =====================

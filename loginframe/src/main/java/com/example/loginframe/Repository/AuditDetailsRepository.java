@@ -24,4 +24,6 @@ public interface AuditDetailsRepository extends JpaRepository<AuditDetails, Long
     Page<AuditDetails> findAuditsWithPendingDocuments(Pageable pageable);
 
     List<AuditDetails> findByAssignedAuditorOrderByAuditIdDesc(String assignedAuditor);
+
+    long countByStatus(String status);
 }

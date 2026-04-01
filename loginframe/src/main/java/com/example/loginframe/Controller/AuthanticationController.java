@@ -361,4 +361,15 @@ public class AuthanticationController {
                 "External Audit"
         ));
     }
+
+    @GetMapping("/counts")
+    public AuditCountDTO getAuditCounts() {
+        return auditDetailService.getAuditCounts();
+    }
+
+    @GetMapping("/audits")
+    public List<AuditDetailDTO> getAudits(@RequestParam(required = false) String status)
+    {
+        return auditDetailService.getAudits(status);
+    }
 }
