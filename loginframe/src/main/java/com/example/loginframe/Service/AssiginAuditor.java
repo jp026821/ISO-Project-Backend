@@ -17,8 +17,26 @@ public class AssiginAuditor {
         AuditDetails audit = auditDetailsRepository.findById(auditId)
                 .orElseThrow(() -> new RuntimeException("Audit not found"));
 
-        audit.setAssignedAuditor(dto.getAssignedAuditor());   // save auditor email
-        audit.setStatus("Assigned");                          // important fix
+        if (dto.getAssignedAuditor() != null && !dto.getAssignedAuditor().trim().isEmpty()) {
+            audit.setAssignedAuditor(dto.getAssignedAuditor().trim());
+        }
+
+        String status = (dto.getStatus() == null || dto.getStatus().trim().isEmpty())
+                ? "Assigned"
+                : dto.getStatus().trim();
+
+        audit.setStatus(status);
+        audit.setAdminComment(dto.getAdminComment());
+
+        auditDetailsRepository.save(audit);
+    }
+
+    public void rejectAudit(Long auditId, AuditDetailDTO dto) {
+
+        AuditDetails audit = auditDetailsRepository.findById(auditId)
+                .orElseThrow(() -> new RuntimeException("Audit not found"));
+
+        audit.setStatus("Rejected");
         audit.setAdminComment(dto.getAdminComment());
 
         auditDetailsRepository.save(audit);

@@ -25,5 +25,7 @@ public interface AuditDetailsRepository extends JpaRepository<AuditDetails, Long
 
     List<AuditDetails> findByAssignedAuditorOrderByAuditIdDesc(String assignedAuditor);
 
+    List<AuditDetails> findByStatusIgnoreCaseOrderByAuditIdDesc(String status);
+
     long countByStatus(String status);
 }
